@@ -4,6 +4,7 @@ import datetime
 import gzip
 from operator import itemgetter
 from ftplib import FTP  # Why can't the requests library support FTP?
+from isdpy.decoder import datamap
 
 ISD_HOST = 'ftp.ncdc.noaa.gov'
 BASE_ISD_PATH = '/pub/data/noaa/'
@@ -40,6 +41,15 @@ class StationList:
         top_file = self.get_icao_station_filenames(station_icao, year)[0]
         gzfile = get_ftp(filename=top_file['filename'], path=BASE_ISD_PATH + str(year), keep_bytes=True)
         return bytes_to_line_array(gzip.decompress(gzfile))
+
+    def decode_record(self, record, datamap=datamap):
+        decoded_dict = {}
+        for k, v in datamap.items():
+            datatype = v['datatype']
+            loc = v['loc']
+            decoded_dict[k] = datatype(record[loc]).strip() if datatype is str else datatype(record[loc])
+
+        return decoded_dict
 
 
 def bytes_to_line_array(bobj, encoding='utf-8'):
